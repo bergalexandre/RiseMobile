@@ -12,11 +12,27 @@
             "platform": "android"
         },
         {
+            "name": "Run Android",
+            "cwd": "${workspaceFolder}",
+            "type": "reactnative",
+            "request": "launch",
+            "platform": "android",
+            "enableDebug": false
+        },
+        {
             "name": "Debug in Exponent",
             "cwd": "${workspaceFolder}",
             "type": "reactnative",
             "request": "launch",
             "platform": "exponent"
+        },
+        {
+            "name": "Attach to packager",
+            "cwd": "${workspaceFolder}",
+            "type": "reactnative",
+            "request": "attach",
+            "port": 19001,
+            "sourceMaps": true
         }
     ]
 }

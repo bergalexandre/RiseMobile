@@ -4,22 +4,11 @@ import EditScreenInfo from '../components/EditScreenInfo';
 import { Text, View } from '../components/Themed';
 import { RootTabScreenProps } from '../types';
 
-import * as React from "react";
+import React, { useState, useEffect } from 'react';
 import { ErrorBoundary } from './ErrorBoundary';
-import Location from 'expo-location';
-import { Observable, defer, from, Subscription } from 'rxjs';
+import * as Location from 'expo-location';
+import { Observable, defer, from, Subscription, observable } from 'rxjs';
  
-// $ est la nomenclature pour un observable, l'élément 1 est la valeur et le 2 un observateur qui peut se partager
-
-const GpsLocation$ = 
-        defer(
-            () => 
-                from(
-                    Location.getCurrentPositionAsync({})
-                )
-            );
-            //
-
 type GPSReaderProps = {
   GpsLocation: Location.LocationObject
 }
@@ -30,6 +19,13 @@ function GpsReader(props: GPSReaderProps) {
                 GPS coordinat2e: {props.GpsLocation.coords.latitude}      
         </Text>
     );
+}
+
+const GPSReadOptions: Location.LocationOptions = {
+  accuracy: Location.Accuracy.BestForNavigation,
+  mayShowUserSettingsDialog: false,
+  timeInterval: undefined,
+  distanceInterval: undefined
 }
 
 export type HomeScreenProps = {
@@ -43,19 +39,26 @@ type HomeScreenState = {
 }
 export default class TabOneScreen extends React.Component<HomeScreenProps, HomeScreenState>
 {
-    readonly GpsLocation$: Observable<Location.LocationObject> = 
-      defer( () => 
-                from(
-                    Location.getCurrentPositionAsync({})
-                )
-            );
+    readonly GpsLocation$ = 
+    new Observable<Location.LocationObject>(subscriber => {
+      let locationRequestOver: boolean = true;
+      setInterval(() => {
+        if(locationRequestOver == true) {
+          locationRequestOver = false;
+          Location.getCurrentPositionAsync(GPSReadOptions)
+            .then(location => subscriber.next(location))
+            .catch(reason => subscriber.error(reason))
+            .finally(() => locationRequestOver = true)
+        }
+      }, 1000)
+    });
   
     sub ?: Subscription;
     constructor(props:HomeScreenProps) {
         super(props);
         this.state = { 
           test: 1, 
-          gpsLocation: {coord: { latitude: 69, longitude: 69}, timestamp: 69} as unknown as Location.LocationObject
+          gpsLocation: {coords: { latitude: 69, longitude: 69}, timestamp: 69} as unknown as Location.LocationObject
         };
     }
 
@@ -64,14 +67,19 @@ export default class TabOneScreen extends React.Component<HomeScreenProps, HomeS
     }
 
     componentDidMount() {
-      this.sub = GpsLocation$.subscribe({
-        next: value => {
-          console.log(`Value is ${value}`)
-          this.setState({gpsLocation: value})
-        },
-        error: err => console.log(err),
-        complete: () => console.log(`Completed`),
-      });
+      Location.requestForegroundPermissionsAsync().then(
+        (value) => {
+          this.sub = this.GpsLocation$.subscribe({
+            next: value => {
+              this.setState({gpsLocation: value});
+            },
+            error: err => console.log(err),
+            complete: () => console.log(`Completed`),
+          });
+        }).catch((msg) => { 
+          throw new Error(msg);
+        })
+      
     }
     
     componentWillUnmount() {
