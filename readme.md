@@ -12,31 +12,44 @@ bluetooth? https://blog.expo.dev/so-you-want-to-build-a-bluetooth-app-with-react
 
 ### Configuration du poste avec Chocolatey
 
-Rouler le script console suivant:
+1. Installer android studio et après dans *tools* -> *SDK Manager* ajouter **android api 32** et **android 11.0(R)**
+   1. Configurer les variables systèmes suivantes:
+      1. ANDROID_HOME = C:\Users\alexandre.bergeron\AppData\Local\Android\Sdk (exemple, changer votre nom de user et pour moi la variable d'environnement faisait chier les commandes donc j'ai mis le full path)
+      1. platform-tools = %LOCALAPPDATA%\Android\Sdk\platform-tools
+2. Rouler le script console suivant:
 ```
 @powershell -NoProfile -ExecutionPolicy unrestricted -Command "iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1'))" && SET PATH=%PATH%;%ALLUSERSPROFILE%\chocolatey\bin
 ```
 
-En powershell, permettre l'exécution de commandes
+3. En powershell, permettre l'exécution de commandes
 ```
 Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
 ```
 
-Installer nodeJS
+4. Installer nodeJS
 ```
 choco install nodejs-lts -y
 ```
 
-Installer JDK8
+5. Installer JDK8
 ```
 choco install adoptopenjdk --version 8.192
 ```
 
-Installer l'android SDK
+6. Installer l'android SDK (JE PENSE QUE C'EST PU REQUIS AVEC ANDROID STUDIO)
 ```
 choco install android-sdk -y
 ```
-Redémarrer la boîte de commandes.
+
+7. À cause que le ble est pas dans expo, installer le java jdk 11
+```
+choco install -y nodejs-lts openjdk11
+```
+
+8. Installer le [android studio](https://reactnative.dev/docs/environment-setup) pour package l'application (sad mais c'est juste à cause que le ble est pas encore merge dans expo)
+
+
+9. Redémarrer la boîte de commandes.
 
 Installer [react native (Expo CLI Quickstart)](https://v7.docs.nativescript.org/angular/start/ns-setup-win)
 ```
@@ -56,6 +69,7 @@ sdkmanager --install "system-images;android-28;google_apis;x86"
 echo "no" | avdmanager --verbose create avd --force --name "pixel_9.0" --device "pixel" --package "system-images;android-28;google_apis;x86" --tag "google_apis" --abi "x86
 ```
 
+je l'ui ai mis 16gb de ram et 4gb pour la carte sd. Le reste était par défaut. Ça peut s'ajuster dans le android studio après l'avoir créé. Aussi il faut faire un **cold boot** du android si jamais vous avez une erreur du genre not found: package
 ### Debug avec un émulateur
 
 * Installer les extensions VSCode:
