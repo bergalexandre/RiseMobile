@@ -1,4 +1,4 @@
-import { Button, StyleSheet } from 'react-native';
+import { AppRegistry, Button, StyleSheet } from 'react-native';
 
 import EditScreenInfo from '../components/EditScreenInfo';
 import { Text, View } from '../components/Themed';
@@ -40,6 +40,7 @@ type HomeScreenState = {
   gpsLocation: Location.LocationObject,
   bluetoothErrorFlag: boolean
 }
+
 export default class TabOneScreen extends React.Component<HomeScreenProps, HomeScreenState>
 {
     readonly GpsLocation$ = 
@@ -95,6 +96,9 @@ export default class TabOneScreen extends React.Component<HomeScreenProps, HomeS
         }
       }, true);
       
+      AppRegistry.registerHeadlessTask("RiseBluetoothTask", () =>
+        require("RiseBluetoothTask")
+      );
     }
     
     componentWillUnmount() {
@@ -130,19 +134,10 @@ export default class TabOneScreen extends React.Component<HomeScreenProps, HomeS
           this.STM32device = device
           this.bleManager.stopDeviceScan();
         }
+        return;
       })
     }
 }
-/*
-export default function TabOneScreen({ navigation }: RootTabScreenProps<'TabOne'>) {
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Tab One</Text>
-      <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
-      <EditScreenInfo path="/screens/TabOneScreen.tsx" />
-    </View>
-  );
-}*/
 
 const styles = StyleSheet.create({
   container: {
