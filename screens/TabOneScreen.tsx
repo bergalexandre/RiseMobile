@@ -4,11 +4,13 @@ import EditScreenInfo from '../components/EditScreenInfo';
 import { Text, View } from '../components/Themed';
 import { RootTabScreenProps } from '../types';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { ErrorBoundary } from './ErrorBoundary';
 import * as Location from 'expo-location';
-import { Observable, defer, from, Subscription, observable } from 'rxjs';
- 
+import { Observable, Subscription } from 'rxjs';
+import { BleManager, Device } from 'react-native-ble-plx'; 
+
+
 type GPSReaderProps = {
   GpsLocation: Location.LocationObject
 }
@@ -35,7 +37,8 @@ export type HomeScreenProps = {
 // Les valeurs qui actualise l'interface
 type HomeScreenState = {
   test: number,
-  gpsLocation: Location.LocationObject
+  gpsLocation: Location.LocationObject,
+  bluetoothErrorFlag: boolean
 }
 export default class TabOneScreen extends React.Component<HomeScreenProps, HomeScreenState>
 {
@@ -54,13 +57,18 @@ export default class TabOneScreen extends React.Component<HomeScreenProps, HomeS
     });
   
     sub ?: Subscription;
+    bleManager: BleManager = new BleManager();
+    STM32device: Device|null = null;
+
     constructor(props:HomeScreenProps) {
         super(props);
         this.state = { 
           test: 1, 
-          gpsLocation: {coords: { latitude: 69, longitude: 69}, timestamp: 69} as unknown as Location.LocationObject
+          gpsLocation: {coords: { latitude: 69, longitude: 69}, timestamp: 69} as unknown as Location.LocationObject,
+          bluetoothErrorFlag: false
         };
     }
+
 
     Increment() {
         this.setState({test: (this.state.test+1)})
@@ -78,7 +86,14 @@ export default class TabOneScreen extends React.Component<HomeScreenProps, HomeS
           });
         }).catch((msg) => { 
           throw new Error(msg);
-        })
+        });
+      
+      const subscription = this.bleManager.onStateChange((state) => {
+        if (state === 'PoweredOn') {
+            this.scanAndConnect();
+            subscription.remove();
+        }
+      }, true);
       
     }
     
@@ -101,9 +116,23 @@ export default class TabOneScreen extends React.Component<HomeScreenProps, HomeS
             </View>
           </ErrorBoundary>
         );
-    } 
-}
+    }
 
+    scanAndConnect() {
+      this.bleManager.startDeviceScan(null, null, (error, device) => {
+        if(error) {
+          this.setState({bluetoothErrorFlag: true})
+          console.log(error)
+          return
+        }
+        if(device?.name ===  "purplezerg") {
+          // Stop scanning as it's not necessary if you are scanning for one device.
+          this.STM32device = device
+          this.bleManager.stopDeviceScan();
+        }
+      })
+    }
+}
 /*
 export default function TabOneScreen({ navigation }: RootTabScreenProps<'TabOne'>) {
   return (
