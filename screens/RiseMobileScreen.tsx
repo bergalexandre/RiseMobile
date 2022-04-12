@@ -8,7 +8,7 @@ import React from 'react';
 import { ErrorBoundary } from './ErrorBoundary';
 import * as Location from 'expo-location';
 import { Observable, Subscription } from 'rxjs';
-import { BleError, BleManager, Characteristic, Descriptor, Device, Service } from 'react-native-ble-plx'; 
+import { BleError, BleManager, Characteristic, Descriptor, Device, Service, Subscription as BleSubscription } from 'react-native-ble-plx'; 
 
 
 type GPSReaderProps = {
@@ -56,6 +56,20 @@ type RiseMobileScreenState = {
   IsLocationAvailable: boolean,
   debugStm32Message: string
 }
+/*
+const useAsyncError = () => {
+  const [_, setError] = React.useState();
+  return React.useCallback(
+    e => {
+      setError(() => {
+        throw e;
+      });
+    },
+    [setError],
+  );
+};
+const throwAsyncError = useAsyncError();*/
+
 export default class RiseMobileScreen extends React.Component<HomeScreenProps, RiseMobileScreenState>
 {
     readonly GpsLocation$ = 
@@ -78,23 +92,31 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
       });
 
     readonly BlueToothData$ = 
-      new Observable<Int8Array[]>(subscriber => {
-        let locationRequestOver: boolean = true;
-        let timer = setInterval(() => {
-          this.stm32SerialCharacteristic?.writeWithResponse("1")
+      new Observable<string>(subscriber => {
+        let timer = setInterval(async () => {
+          try {
+            await this.stm32SerialCharacteristic?.writeWithoutResponse(btoa("Allo"));
+          } catch (error) {
+            console.error(error)
+          }
+          
+          if(this.state.isMonitoringStarted === false) {
+            clearInterval(timer);
+          }
         }, 1000)
       });
 
-    readonly stm32SerialServiceUUID: string = "0xFFE0";
-    readonly stm32SerialCharacteristicUUID: string = "0xFFE1";
+    readonly stm32SerialServiceUUID: string = "ffe0";
+    readonly stm32SerialCharacteristicUUID: string = "ffe1";
 
-
+    
     stm32Device ?: Device = undefined; 
     stm32SerialCharacteristic ?: Characteristic = undefined;
     bleManager: BleManager = new BleManager();
     
     gpsSub: Subscription|undefined;
     stm32Sub: Subscription|undefined;
+    listenSub?: BleSubscription;
 
     constructor(props:HomeScreenProps) {
         super(props);
@@ -139,36 +161,46 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
     }
 
     async monitorRiseVehcile() {
-      if(this.state.isMonitoringStarted == false) {
-        this.setState({isMonitoringStarted: true})
-        try {
+      try {
+        if(this.state.isMonitoringStarted == false) {
+          this.setState({isMonitoringStarted: true})
           this.stm32Device = await this.scanAndConnect();
           this.stm32Device = await this.stm32Device.connect();
           this.stm32Device = await this.stm32Device?.discoverAllServicesAndCharacteristics();
           this.stm32SerialCharacteristic = await this.findSerialCharacteristicInDevice(this.stm32Device);
-          
-        } catch (error) {
-          if(error instanceof BleError) {
-            this.setState({bluetoothErrorFlag: true});
-            console.error("Erreur de connection");
-            console.error(error);
-          } else {
-            // rethrow si on ne la connait pas
-            throw(error);
-          }
+          this.gpsSub = this.observeGpsLocation();
+          this.stm32Sub = this.observeSTM32Data();
+        } else {
+          this.setState({isMonitoringStarted: false})
+          this.gpsSub?.unsubscribe();
+          this.stm32Sub?.unsubscribe()
+          this.listenSub?.remove();
+          await this.stm32Device?.cancelConnection();
         }
-      } else {
-        this.setState({isMonitoringStarted: false})
-        await this.stm32Device?.cancelConnection();
+      } catch (error) {
+        if(error instanceof BleError) {
+          this.setState({bluetoothErrorFlag: true});
+          console.error("Erreur de connection");
+          console.error(error);
+        } else {
+          // rethrow si on ne la connait pas
+          //throwAsyncError(error)
+        }
       }
     }
 
     async findSerialCharacteristicInDevice(device: Device): Promise<Characteristic> {
       let services: Service[] | undefined = await this.stm32Device?.services();
-      let stm32SerialService = services?.find((service) => service.uuid == this.stm32SerialServiceUUID);
+      let stm32SerialService = services?.find((service) => service.uuid.includes(this.stm32SerialServiceUUID));
       let characteristics = await stm32SerialService?.characteristics();
-      let stm32SerialCharacteristic = characteristics?.find(characteristic => characteristic.uuid === this.stm32SerialCharacteristicUUID); 
-
+      let stm32SerialCharacteristic = characteristics?.find(characteristic => characteristic.uuid.includes(this.stm32SerialCharacteristicUUID));
+      this.listenSub = stm32SerialCharacteristic?.monitor((error, characteristic) => {
+        if(error != undefined) {
+          console.error(error?.message);
+        } else {
+          this.setState({debugStm32Message: characteristic?.value == undefined ? "Aucun message": Buffer.from(characteristic?.value, "base64").toString() })
+        }
+      });
       if(stm32SerialCharacteristic === undefined) {
         throw new Error(`Caractéristique pas trouvé dans la liste des services ${services}`);
       }
@@ -181,7 +213,17 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
           next: value => {
             this.setState({gpsLocation: value});
           },
-          error: err => console.log(err),
+          error: err => console.log(err),//throwAsyncError(err),
+          complete: () => console.log(`Completed observation of GPS location`),
+        });
+    }
+
+    observeSTM32Data(): Subscription {
+      return this.BlueToothData$.subscribe({
+          next: value => {
+            this.setState({debugStm32Message: value});
+          },
+          error: err => console.log(err),//throwAsyncError(err),
           complete: () => console.log(`Completed observation of GPS location`),
         });
     }
@@ -211,11 +253,13 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
             <Button
                 onPress={() => this.monitorRiseVehcile()}
                 title={this.state.isMonitoringStarted ? "Stop": "Start"}
-                disabled={this.state.isBluetoothAvailable && this.state.IsLocationAvailable} >
+                disabled={!this.state.isBluetoothAvailable || !this.state.IsLocationAvailable} >
             </Button>
             <GpsReader GpsLocation={this.state.gpsLocation}></GpsReader>
             <Stm32Reader message={this.state.debugStm32Message}></Stm32Reader>
-
+            <Text>Bluetooth: {this.state.isBluetoothAvailable? "Actif": "Inactif"}</Text>
+            <Text>Localisation: {this.state.IsLocationAvailable? "Actif": "Inactif"}</Text>
+            <Text>Bluetooth Status: {this.state.bluetoothErrorFlag? "Erreurs détectée": "Pas d'erreur"}</Text>
           </View>
         </ErrorBoundary>
       );
