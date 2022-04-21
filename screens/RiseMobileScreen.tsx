@@ -17,9 +17,12 @@ type GPSReaderProps = {
 
 function GpsReader(props: GPSReaderProps) {  
     return (
-        <Text>
-                GPS coordinat2e: {props.GpsLocation.coords.latitude}      
-        </Text>
+      <View>
+        <Text style={styles.bigtext}>GPS lattitude: {props.GpsLocation.coords.latitude}</Text>
+        <Text style={styles.bigtext}>GPS longitude: {props.GpsLocation.coords.longitude}</Text>
+        <Text style={styles.bigtext}>GPS altitude: {props.GpsLocation.coords.altitude}</Text>
+      </View>
+        
     );
 }
 
@@ -29,8 +32,8 @@ type STM32ReaderProps = {
 
 function Stm32Reader(props: STM32ReaderProps) {  
   return (
-      <Text>
-              Message from STM32: {props.message}      
+      <Text style={styles.bigtext}>
+              Message du STM32: {props.message}      
       </Text>
   );
 }
@@ -122,7 +125,7 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
         super(props);
         this.state = { 
           test: 1, 
-          gpsLocation: {coords: { latitude: 69, longitude: 69}, timestamp: 69} as unknown as Location.LocationObject,
+          gpsLocation: {coords: { latitude: 69, longitude: 69, altitude: 69}, timestamp: 69} as unknown as Location.LocationObject,
           bluetoothErrorFlag: false,
           isMonitoringStarted: false,
           isBluetoothAvailable: false,
@@ -249,7 +252,6 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
           <View style={styles.container}>
             <Text style={styles.title}>Rise Mobile</Text>
             <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
-            <EditScreenInfo path="/screens/RiseMobileScreenRiseMobileScreen.tsx" />
             <Button
                 onPress={() => this.monitorRiseVehcile()}
                 title={this.state.isMonitoringStarted ? "Stop": "Start"}
@@ -257,9 +259,9 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
             </Button>
             <GpsReader GpsLocation={this.state.gpsLocation}></GpsReader>
             <Stm32Reader message={this.state.debugStm32Message}></Stm32Reader>
-            <Text>Bluetooth: {this.state.isBluetoothAvailable? "Actif": "Inactif"}</Text>
-            <Text>Localisation: {this.state.IsLocationAvailable? "Actif": "Inactif"}</Text>
-            <Text>Bluetooth Status: {this.state.bluetoothErrorFlag? "Erreurs détectée": "Pas d'erreur"}</Text>
+            <Text style={styles.bigtext}>Bluetooth: {this.state.isBluetoothAvailable? "Actif": "Inactif"}</Text>
+            <Text style={styles.bigtext}>Localisation: {this.state.IsLocationAvailable? "Actif": "Inactif"}</Text>
+            <Text style={styles.bigtext}>Bluetooth Status: {this.state.bluetoothErrorFlag? "Erreurs détectée": "Pas d'erreur"}</Text>
           </View>
         </ErrorBoundary>
       );
@@ -273,7 +275,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   title: {
-    fontSize: 20,
+    fontSize: 32,
     fontWeight: 'bold',
   },
   separator: {
@@ -285,4 +287,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: "#2e6ddf",
   },
+  bigtext: {
+    fontSize: 18,
+  }
 });
