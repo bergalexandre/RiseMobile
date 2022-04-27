@@ -163,14 +163,14 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
       );
   }
 
-    private async monitorRiseVehicule() {
+    private async monitorRiseVehicule(): Promise<void> {
       try {
         if(this.state.isMonitoringStarted == false) {
           this.setState({isMonitoringStarted: true})
           this.stm32Device = await this.scanAndConnect();
           this.stm32Device = await this.stm32Device.connect();
           this.stm32Device = await this.stm32Device?.discoverAllServicesAndCharacteristics();
-          let stm32SerialCharacteristic = await this.findSerialCharacteristicInDevice(this.stm32Device);
+          let stm32SerialCharacteristic = await this.findSerialCharacteristicInDevice();
           this.gpsSub = this.observeGpsLocation();
           this.stm32Sub = this.observeSTM32Data(stm32SerialCharacteristic);
         } else {
@@ -191,7 +191,7 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
       }
     }
 
-    private async findSerialCharacteristicInDevice(device: Device): Promise<Characteristic> {
+    private async findSerialCharacteristicInDevice(): Promise<Characteristic> {
       const stm32SerialServiceShortUUID: string = "ffe0";
       const stm32SerialCharacteristicShortUUID: string = "ffe1";
       let services: Service[] | undefined = await this.stm32Device?.services();
