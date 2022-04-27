@@ -142,6 +142,27 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
 
     }
 
+    render() {
+      return (
+        <ErrorBoundary>
+          <View style={styles.container}>
+            <Text style={styles.title}>Rise Mobile</Text>
+            <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
+            <Button
+                onPress={() => this.monitorRiseVehcile()}
+                title={this.state.isMonitoringStarted ? "Stop": "Start"}
+                disabled={!this.state.isBluetoothAvailable || !this.state.IsLocationAvailable} >
+            </Button>
+            <GpsReader GpsLocation={this.state.gpsLocation}></GpsReader>
+            <Stm32Reader message={this.state.debugStm32Message}></Stm32Reader>
+            <Text style={styles.bigtext}>Bluetooth: {this.state.isBluetoothAvailable? "Actif": "Inactif"}</Text>
+            <Text style={styles.bigtext}>Localisation: {this.state.IsLocationAvailable? "Actif": "Inactif"}</Text>
+            <Text style={styles.bigtext}>Bluetooth Status: {this.state.bluetoothErrorFlag? "Erreurs détectée": "Pas d'erreur"}</Text>
+          </View>
+        </ErrorBoundary>
+      );
+  }
+
     private async monitorRiseVehcile() {
       try {
         if(this.state.isMonitoringStarted == false) {
@@ -246,27 +267,6 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
         })
       })
     }
-
-    render() {
-      return (
-        <ErrorBoundary>
-          <View style={styles.container}>
-            <Text style={styles.title}>Rise Mobile</Text>
-            <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
-            <Button
-                onPress={() => this.monitorRiseVehcile()}
-                title={this.state.isMonitoringStarted ? "Stop": "Start"}
-                disabled={!this.state.isBluetoothAvailable || !this.state.IsLocationAvailable} >
-            </Button>
-            <GpsReader GpsLocation={this.state.gpsLocation}></GpsReader>
-            <Stm32Reader message={this.state.debugStm32Message}></Stm32Reader>
-            <Text style={styles.bigtext}>Bluetooth: {this.state.isBluetoothAvailable? "Actif": "Inactif"}</Text>
-            <Text style={styles.bigtext}>Localisation: {this.state.IsLocationAvailable? "Actif": "Inactif"}</Text>
-            <Text style={styles.bigtext}>Bluetooth Status: {this.state.bluetoothErrorFlag? "Erreurs détectée": "Pas d'erreur"}</Text>
-          </View>
-        </ErrorBoundary>
-      );
-  }
 }
 
 const styles = StyleSheet.create({
