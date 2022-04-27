@@ -99,7 +99,6 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
     
     private gpsSub: Subscription|undefined;
     private stm32Sub: Subscription|undefined;
-    private listenSub?: BleSubscription;
 
     constructor(props:HomeScreenProps) {
         super(props);
@@ -157,7 +156,6 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
           this.setState({isMonitoringStarted: false})
           this.gpsSub?.unsubscribe();
           this.stm32Sub?.unsubscribe()
-          this.listenSub?.remove();
           await this.stm32Device?.cancelConnection();
         }
       } catch (error) {
@@ -199,10 +197,11 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
 
     private createSTM32Observer$(serialCharacteristic: Characteristic): Observable<string> {
       return new Observable<string>(subscriber => {
+        let hm10Monitor: BleSubscription|undefined; 
         let timer = setInterval(async () => {
           try {
             await serialCharacteristic.writeWithoutResponse(Buffer.from("Allo").toString("base64"));
-            this.listenSub = serialCharacteristic.monitor((error, characteristic) => {
+            hm10Monitor = serialCharacteristic.monitor((error, characteristic) => {
               if(error != undefined) {
                 subscriber.error(error);
               } else {
@@ -217,6 +216,7 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
           
           if(this.state.isMonitoringStarted === false) {
             clearInterval(timer);
+            hm10Monitor?.remove()
           }
         }, 1000)
       });
