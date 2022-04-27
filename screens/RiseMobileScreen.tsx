@@ -75,7 +75,7 @@ const throwAsyncError = useAsyncError();*/
 
 export default class RiseMobileScreen extends React.Component<HomeScreenProps, RiseMobileScreenState>
 {
-    readonly GpsLocation$ = 
+    private readonly GpsLocation$ = 
       new Observable<Location.LocationObject>(subscriber => {
         let locationRequestOver: boolean = true;
         let timer = setInterval(() => {
@@ -94,32 +94,12 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
         }, 1000)
       });
 
-    readonly BlueToothData$ = 
-      new Observable<string>(subscriber => {
-        let timer = setInterval(async () => {
-          try {
-            await this.stm32SerialCharacteristic?.writeWithoutResponse(btoa("Allo"));
-          } catch (error) {
-            console.error(error)
-          }
-          
-          if(this.state.isMonitoringStarted === false) {
-            clearInterval(timer);
-          }
-        }, 1000)
-      });
-
-    readonly stm32SerialServiceUUID: string = "ffe0";
-    readonly stm32SerialCharacteristicUUID: string = "ffe1";
-
+    private stm32Device ?: Device = undefined; 
+    private bleManager: BleManager = new BleManager();
     
-    stm32Device ?: Device = undefined; 
-    stm32SerialCharacteristic ?: Characteristic = undefined;
-    bleManager: BleManager = new BleManager();
-    
-    gpsSub: Subscription|undefined;
-    stm32Sub: Subscription|undefined;
-    listenSub?: BleSubscription;
+    private gpsSub: Subscription|undefined;
+    private stm32Sub: Subscription|undefined;
+    private listenSub?: BleSubscription;
 
     constructor(props:HomeScreenProps) {
         super(props);
@@ -163,16 +143,16 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
 
     }
 
-    async monitorRiseVehcile() {
+    private async monitorRiseVehcile() {
       try {
         if(this.state.isMonitoringStarted == false) {
           this.setState({isMonitoringStarted: true})
           this.stm32Device = await this.scanAndConnect();
           this.stm32Device = await this.stm32Device.connect();
           this.stm32Device = await this.stm32Device?.discoverAllServicesAndCharacteristics();
-          this.stm32SerialCharacteristic = await this.findSerialCharacteristicInDevice(this.stm32Device);
+          let stm32SerialCharacteristic = await this.findSerialCharacteristicInDevice(this.stm32Device);
           this.gpsSub = this.observeGpsLocation();
-          this.stm32Sub = this.observeSTM32Data();
+          this.stm32Sub = this.observeSTM32Data(stm32SerialCharacteristic);
         } else {
           this.setState({isMonitoringStarted: false})
           this.gpsSub?.unsubscribe();
@@ -192,18 +172,14 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
       }
     }
 
-    async findSerialCharacteristicInDevice(device: Device): Promise<Characteristic> {
+    private async findSerialCharacteristicInDevice(device: Device): Promise<Characteristic> {
+      const stm32SerialServiceShortUUID: string = "ffe0";
+      const stm32SerialCharacteristicShortUUID: string = "ffe1";
       let services: Service[] | undefined = await this.stm32Device?.services();
-      let stm32SerialService = services?.find((service) => service.uuid.includes(this.stm32SerialServiceUUID));
+      let stm32SerialService = services?.find((service) => service.uuid.includes(stm32SerialServiceShortUUID));
       let characteristics = await stm32SerialService?.characteristics();
-      let stm32SerialCharacteristic = characteristics?.find(characteristic => characteristic.uuid.includes(this.stm32SerialCharacteristicUUID));
-      this.listenSub = stm32SerialCharacteristic?.monitor((error, characteristic) => {
-        if(error != undefined) {
-          console.error(error?.message);
-        } else {
-          this.setState({debugStm32Message: characteristic?.value == undefined ? "Aucun message": Buffer.from(characteristic?.value, "base64").toString() })
-        }
-      });
+      let stm32SerialCharacteristic = characteristics?.find(characteristic => characteristic.uuid.includes(stm32SerialCharacteristicShortUUID));
+      
       if(stm32SerialCharacteristic === undefined) {
         throw new Error(`Caractéristique pas trouvé dans la liste des services ${services}`);
       }
@@ -211,7 +187,7 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
 
     }
 
-    observeGpsLocation(): Subscription {
+    private observeGpsLocation(): Subscription {
       return this.GpsLocation$.subscribe({
           next: value => {
             this.setState({gpsLocation: value});
@@ -221,8 +197,33 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
         });
     }
 
-    observeSTM32Data(): Subscription {
-      return this.BlueToothData$.subscribe({
+    private createSTM32Observer$(serialCharacteristic: Characteristic): Observable<string> {
+      return new Observable<string>(subscriber => {
+        let timer = setInterval(async () => {
+          try {
+            await serialCharacteristic.writeWithoutResponse(Buffer.from("Allo").toString("base64"));
+            this.listenSub = serialCharacteristic.monitor((error, characteristic) => {
+              if(error != undefined) {
+                subscriber.error(error);
+              } else {
+                subscriber.next(
+                  characteristic?.value == undefined ? "Aucun message": Buffer.from(characteristic?.value, "base64").toString()
+                )
+              }
+            });
+          } catch (error) {
+            subscriber.error(error)
+          }
+          
+          if(this.state.isMonitoringStarted === false) {
+            clearInterval(timer);
+          }
+        }, 1000)
+      });
+    }
+
+    private observeSTM32Data(serialCharacteristic: Characteristic): Subscription {
+      return this.createSTM32Observer$(serialCharacteristic).subscribe({
           next: value => {
             this.setState({debugStm32Message: value});
           },
@@ -231,7 +232,7 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
         });
     }
 
-    scanAndConnect(): Promise<Device> {
+    private scanAndConnect(): Promise<Device> {
       return new Promise( (resolve) => {
         this.bleManager.startDeviceScan(null, null, (error, device) => {
           if(error) {
