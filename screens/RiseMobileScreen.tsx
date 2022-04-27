@@ -149,7 +149,7 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
             <Text style={styles.title}>Rise Mobile</Text>
             <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
             <Button
-                onPress={() => this.monitorRiseVehcile()}
+                onPress={() => this.monitorRiseVehicule()}
                 title={this.state.isMonitoringStarted ? "Stop": "Start"}
                 disabled={!this.state.isBluetoothAvailable || !this.state.IsLocationAvailable} >
             </Button>
@@ -163,7 +163,7 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
       );
   }
 
-    private async monitorRiseVehcile() {
+    private async monitorRiseVehicule() {
       try {
         if(this.state.isMonitoringStarted == false) {
           this.setState({isMonitoringStarted: true})
