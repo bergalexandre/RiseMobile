@@ -8,7 +8,7 @@ import React from 'react';
 import { ErrorBoundary } from './ErrorBoundary';
 import * as Location from 'expo-location';
 import { Observable, Subscription } from 'rxjs';
-import { BleError, BleManager, Characteristic, Descriptor, Device, Service, Subscription as BleSubscription } from 'react-native-ble-plx'; 
+import { BleError, BleManager, Characteristic, Device, Service, Subscription as BleSubscription } from 'react-native-ble-plx'; 
 
 
 type GPSReaderProps = {
@@ -218,19 +218,18 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
 
     private createSTM32Observer$(serialCharacteristic: Characteristic): Observable<string> {
       return new Observable<string>(subscriber => {
-        let hm10Monitor: BleSubscription|undefined; 
+        let hm10Monitor = serialCharacteristic.monitor((error, characteristic) => {
+          if(error != undefined) {
+            subscriber.error(error);
+          } else {
+            subscriber.next(
+              characteristic?.value == undefined ? "Aucun message": Buffer.from(characteristic?.value, "base64").toString()
+            )
+          }
+        });
         let timer = setInterval(async () => {
           try {
             await serialCharacteristic.writeWithoutResponse(Buffer.from("Allo").toString("base64"));
-            hm10Monitor = serialCharacteristic.monitor((error, characteristic) => {
-              if(error != undefined) {
-                subscriber.error(error);
-              } else {
-                subscriber.next(
-                  characteristic?.value == undefined ? "Aucun message": Buffer.from(characteristic?.value, "base64").toString()
-                )
-              }
-            });
           } catch (error) {
             subscriber.error(error)
           }
