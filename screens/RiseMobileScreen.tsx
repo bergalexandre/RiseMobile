@@ -150,8 +150,7 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
             <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
             <Button
                 onPress={() => this.monitorRiseVehicule()}
-                title={this.state.isMonitoringStarted ? "Stop": "Start"}
-                disabled={!this.state.isBluetoothAvailable || !this.state.IsLocationAvailable} >
+                title={this.state.isMonitoringStarted ? "Stop": "Start"} >
             </Button>
             <GpsReader GpsLocation={this.state.gpsLocation}></GpsReader>
             <Stm32Reader message={this.state.debugStm32Message}></Stm32Reader>
@@ -167,17 +166,25 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
       try {
         if(this.state.isMonitoringStarted == false) {
           this.setState({isMonitoringStarted: true})
-          this.stm32Device = await this.scanAndConnect();
-          this.stm32Device = await this.stm32Device.connect();
-          this.stm32Device = await this.stm32Device?.discoverAllServicesAndCharacteristics();
-          let stm32SerialCharacteristic = await this.findSerialCharacteristicInDevice();
-          this.gpsSub = this.observeGpsLocation();
-          this.stm32Sub = this.observeSTM32Data(stm32SerialCharacteristic);
+          if(this.state.isBluetoothAvailable) {
+            this.stm32Device = await this.scanAndConnect();
+            this.stm32Device = await this.stm32Device.connect();
+            this.stm32Device = await this.stm32Device?.discoverAllServicesAndCharacteristics();
+            let stm32SerialCharacteristic = await this.findSerialCharacteristicInDevice();
+            this.stm32Sub = this.observeSTM32Data(stm32SerialCharacteristic);
+          }
+          if(this.state.IsLocationAvailable) {
+            this.gpsSub = this.observeGpsLocation();
+          }
         } else {
           this.setState({isMonitoringStarted: false})
-          this.gpsSub?.unsubscribe();
-          this.stm32Sub?.unsubscribe()
-          await this.stm32Device?.cancelConnection();
+          if(this.state.IsLocationAvailable) {
+            this.gpsSub?.unsubscribe();
+          }
+          if(this.state.isBluetoothAvailable) {
+            this.stm32Sub?.unsubscribe()
+            await this.stm32Device?.cancelConnection();
+          }
         }
       } catch (error) {
         if(error instanceof BleError) {
