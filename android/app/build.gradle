@@ -1,4 +1,7 @@
 apply plugin: "com.android.application"
+apply plugin:'java'
+
+compile project(':sp-react-native-mqtt')
 
 import com.android.build.OutputFile
 
@@ -187,6 +190,7 @@ dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
     //noinspection GradleDynamicVersion
     implementation "com.facebook.react:react-native:+"  // From node_modules
+    implementation ':sp-react-native-mqtt'
 
     def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";
     def isWebpEnabled = (findProperty('expo.webp.enabled') ?: "") == "true";
