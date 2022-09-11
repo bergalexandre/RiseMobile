@@ -1,8 +1,6 @@
 apply plugin: "com.android.application"
 apply plugin:'java'
 
-compile project(':sp-react-native-mqtt')
-
 import com.android.build.OutputFile
 
 /**

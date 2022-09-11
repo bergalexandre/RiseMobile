@@ -8,9 +8,12 @@ import React from 'react';
 import { ErrorBoundary } from './ErrorBoundary';
 import * as Location from 'expo-location';
 import { Observable, Subscription } from 'rxjs';
-import { BleError, BleManager, Characteristic, Device, Service, Subscription as BleSubscription } from 'react-native-ble-plx'; 
-//import MQTT, { IMqttClient } from 'sp-react-native-mqtt';
-import Paho from 'paho-mqtt';
+import { BleError, BleManager, Characteristic, Device, Service, Subscription as BleSubscription } from 'react-native-ble-plx';
+ 
+import MQTT, { IMqttClient } from 'sp-react-native-mqtt';
+
+
+//import Paho from 'paho-mqtt';
 
 
 type GPSReaderProps = {
@@ -101,7 +104,7 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
     
     private gpsSub: Subscription|undefined;
     private stm32Sub: Subscription|undefined;
-  //  private mqttClient: IMqttClient|undefined;
+    private mqttClient: IMqttClient|undefined;
 
     constructor(props:HomeScreenProps) {
         super(props);
@@ -136,35 +139,14 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
         }
       }, true);
 
-      const client = new Paho.Client(
-        'mqtt.chargefix.com',
-        Number(8083),
-        '/',
-        'testasdasd1231231'
-      );
-      client.onConnectionLost = (error) => {
-        console.log(error);
-      };
-      client.onMessageArrived = (message) => {
-        console.log(message);
-      };
-      
-      client.connect({ onSuccess:(_) => { 
-        console.log("Connection successful")}, 
-        userName: 'ubuntu',
-        password: 'Charge.1988',
-        useSSL: true });
-      
-
-      // MQTT.createClient({
-      //   uri: 'mqtt://test.mosquitto.org:1883',
-      //   clientId: '6a57ae45-d96a-4c3e-86b5-4e9102260e76'
-      // }).then((client) => {
-      //   this.mqttClient = client;
-      // }).catch(error => {
-      //   console.log(error)
-      // })
-      
+      MQTT.createClient({
+        uri: 'mqtt://test.mosquitto.org:1883',
+        clientId: 'Marian1r'
+      }).then((client) => {
+        this.mqttClient = client;
+      }).catch(error => {
+        console.log(error)
+      })
     }
     
     componentWillUnmount() {

@@ -1,14 +1,11 @@
 rootProject.name = 'RiseMobile'
 include ':sp-react-native-mqtt'
-project(':sp-react-native-mqtt').projectDir = new File(rootProject.projectDir, '../node_modules/sp-react-native-mqtt/android')
+project(':sp-react-native-mqtt').projectDir = new File('D:/RiseMobile/RiseMobile/node_modules/sp-react-native-mqtt/android')
 
 apply from: new File(["node", "--print", "require.resolve('expo/package.json')"].execute(null, rootDir).text.trim(), "../scripts/autolinking.gradle");
 useExpoModules()
 
 apply from: new File(["node", "--print", "require.resolve('@react-native-community/cli-platform-android/package.json')"].execute(null, rootDir).text.trim(), "../native_modules.gradle");
 applyNativeModulesSettingsGradle(settings)
-
-include ':sp-react-native-mqtt'
-project(':sp-react-native-mqtt').projectDir = new File(rootProject.projectDir,  '../node_modules/sp-react-native-mqtt/android')
 
 include ':app'
