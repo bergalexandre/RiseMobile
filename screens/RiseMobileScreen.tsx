@@ -8,13 +8,9 @@ import React from 'react';
 import { ErrorBoundary } from './ErrorBoundary';
 import * as Location from 'expo-location';
 import { Observable, Subscription } from 'rxjs';
-import { BleError, BleManager, Characteristic, Device, Service, Subscription as BleSubscription } from 'react-native-ble-plx';
- 
-import MQTT, { IMqttClient } from 'sp-react-native-mqtt';
+import { BleError, BleManager, Characteristic, Device, Service, Subscription as BleSubscription } from 'react-native-ble-plx'; 
 
-
-//import Paho from 'paho-mqtt';
-
+import mqtt from "precompiled-mqtt";
 
 type GPSReaderProps = {
   GpsLocation: Location.LocationObject
@@ -104,7 +100,6 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
     
     private gpsSub: Subscription|undefined;
     private stm32Sub: Subscription|undefined;
-    private mqttClient: IMqttClient|undefined;
 
     constructor(props:HomeScreenProps) {
         super(props);
@@ -118,7 +113,6 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
           debugStm32Message: "Aucun message"
         };
     }
-
 
     Increment() {
         this.setState({test: (this.state.test+1)})
@@ -138,14 +132,31 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
             subscription.remove();
         }
       }, true);
+      
+      // mosquitto test broker
+      const URL = "mqtt://test.mosquitto.org:8080";
 
-      MQTT.createClient({
-        uri: 'mqtt://test.mosquitto.org:1883',
-        clientId: 'Marian1r'
-      }).then((client) => {
-        this.mqttClient = client;
-      }).catch(error => {
-        console.log(error)
+      const client = mqtt.connect(URL);
+        
+      client.subscribe('Marian1r', { qos: 0 }, function (error, granted) {
+        if (error) {
+          console.log(error)
+        } else {
+          console.log(`${granted[0].topic} was subscribed`)
+        }
+      })   
+
+      client.publish('Marian1r', 'Hello, MQTT!', { qos: 0, retain: false }, function (error) {
+        if (error) {
+          console.log(error)
+        } else {
+          console.log('Published')
+        }
+      })
+
+      client.on('message', function (topic, payload, packet) {
+        // Payload is Buffer
+        console.log(`Topic: ${topic}, Message: ${payload.toString()}, QoS: ${packet.qos}`)
       })
     }
     
