@@ -228,39 +228,43 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
     
 
     private async monitorRiseVehicule(): Promise<void> {
-      try {
-        if(this.state.isMonitoringStarted == false) {
-          this.setState({isMonitoringStarted: true})
-          if(this.state.isBluetoothAvailable) {
-            this.stm32Device = await this.scanAndConnect();
-            this.stm32Device = await this.stm32Device.connect();
-            this.stm32Device = await this.stm32Device?.discoverAllServicesAndCharacteristics();
-            let stm32SerialCharacteristic = await this.findSerialCharacteristicInDevice();
-            this.stm32Sub = this.observeSTM32Data(stm32SerialCharacteristic);
+      if(this.state.isMonitoringStarted == false) {
+        this.setState({isMonitoringStarted: true})
+
+        if(this.state.isBluetoothAvailable) {
+            try {
+              this.stm32Device = await this.scanAndConnect();
+              this.stm32Device = await this.stm32Device.connect();
+              this.stm32Device = await this.stm32Device?.discoverAllServicesAndCharacteristics();
+              let stm32SerialCharacteristic = await this.findSerialCharacteristicInDevice();
+              this.stm32Sub = this.observeSTM32Data(stm32SerialCharacteristic);
+            } catch (error) {
+              if(error instanceof BleError) {
+                this.setState({bluetoothErrorFlag: true});
+                console.error("Erreur de connection");
+                console.error(error);
+              } else {
+                console.error(error);
+              }
+            }
           }
+
           if(this.state.IsLocationAvailable) {
             this.gpsSub = this.observeGpsLocation();
           }
+
         } else {
           this.setState({isMonitoringStarted: false})
+
           if(this.state.IsLocationAvailable) {
             this.gpsSub?.unsubscribe();
           }
+
           if(this.state.isBluetoothAvailable) {
             this.stm32Sub?.unsubscribe()
             await this.stm32Device?.cancelConnection();
           }
         }
-      } catch (error) {
-        if(error instanceof BleError) {
-          this.setState({bluetoothErrorFlag: true});
-          console.error("Erreur de connection");
-          console.error(error);
-        } else {
-          // rethrow si on ne la connait pas
-          //throwAsyncError(error)
-        }
-      }
     }
 
     private async findSerialCharacteristicInDevice(): Promise<Characteristic> {
@@ -325,14 +329,19 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
     }
 
     private scanAndConnect(): Promise<Device> {
-      return new Promise( (resolve) => {
-        this.bleManager.startDeviceScan(null, null, (error, device) => {
-          if(error) {
-            throw error;
+      return new Promise( (resolve, error) => {
+        this.bleManager.startDeviceScan(null, null, (bleError, device) => {
+          let scanTimeout = setTimeout(() => {
+            this.bleManager.stopDeviceScan();
+            error("No device were found after 5 seconds.");
+          })
+          if(bleError) {
+            error(bleError);
           }
           if(device?.name ===  "purplezerg") {
             // Stop scanning as it's not necessary if you are scanning for one device.
             this.bleManager.stopDeviceScan();
+            clearTimeout(scanTimeout);
             resolve(device)
           }
         })
