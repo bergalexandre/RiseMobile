@@ -204,15 +204,15 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
       try {
         const URL = "mqtt://test.mosquitto.org:8080";
         const client = mqtt.connect(URL);
-        if(this.state.isMonitoringStarted == false) {
+        if(this.state.isMonitoringStarted == true) {
           this.setState({isMonitoringStarted: true})
-          if(this.state.isBluetoothAvailable) {   
+          /*if(this.state.isBluetoothAvailable) {   
             this.stm32Device = await this.scanAndConnect();
             this.stm32Device = await this.stm32Device.connect();
             this.stm32Device = await this.stm32Device?.discoverAllServicesAndCharacteristics();
             let stm32SerialCharacteristic = await this.findSerialCharacteristicInDevice();
             this.stm32Sub = this.observeSTM32Data(stm32SerialCharacteristic);
-          }
+          }*/
           if(this.state.IsLocationAvailable) {
             let latitude = gpsData.coords.latitude;
             let longitude = gpsData.coords.longitude;
@@ -270,6 +270,7 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
                 console.log('Published')
               }
             })
+
             client.subscribe('Marian1r', { qos: 0 }, function (error, granted) {
               if (error) {
                 console.log(error)
@@ -325,20 +326,25 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
         });
     }
 
-    private scanAndConnect(): Promise<Device> {
-      return new Promise( (resolve) => {
-        this.bleManager.startDeviceScan(null, null, (error, device) => {
-          if(error) {
-            throw error;
-          }
-          if(device?.name ===  "purplezerg") {
-            // Stop scanning as it's not necessary if you are scanning for one device.
-            this.bleManager.stopDeviceScan();
-            resolve(device)
-          }
-        })
-      })
-    }
+    private scanAndConnect(): Promise<Device> {	
+      return new Promise( (resolve, error) => {	
+        this.bleManager.startDeviceScan(null, null, (bleError, device) => {	
+          let scanTimeout = setTimeout(() => {	
+            this.bleManager.stopDeviceScan();	
+            error("No device were found after 5 seconds.");	
+          })	
+          if(bleError) {	
+            error(bleError);	
+          }	
+          if(device?.name ===  "purplezerg") {	
+            // Stop scanning as it's not necessary if you are scanning for one device.	
+            this.bleManager.stopDeviceScan();	
+            clearTimeout(scanTimeout);	
+            resolve(device)	
+          }	
+        })	
+      })	
+    }	
 }
 
 const styles = StyleSheet.create({
