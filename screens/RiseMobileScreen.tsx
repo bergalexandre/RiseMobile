@@ -168,7 +168,6 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
       let longitude = gpsData.coords.longitude;
       let altitude = gpsData.coords.altitude;
       
-
       // mosquitto test broker
       const URL = "mqtt://test.mosquitto.org:8080";
 
@@ -202,8 +201,6 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
 
     private async monitorRiseVehicule(gpsData:any): Promise<void> {
       try {
-        const URL = "mqtt://test.mosquitto.org:8080";
-        const client = mqtt.connect(URL);
         if(this.state.isMonitoringStarted == true) {
           this.setState({isMonitoringStarted: true})
           /*if(this.state.isBluetoothAvailable) {   
@@ -214,13 +211,9 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
             this.stm32Sub = this.observeSTM32Data(stm32SerialCharacteristic);
           }*/
           if(this.state.IsLocationAvailable) {
-            let latitude = gpsData.coords.latitude;
-            let longitude = gpsData.coords.longitude;
-            let altitude = gpsData.coords.altitude;
-            this.gpsSub = this.observeGpsLocation(client, latitude, longitude, altitude);
+            this.gpsSub = this.observeGpsLocation();
           }
         } else {
-          client.end()
           this.setState({isMonitoringStarted: false})
           if(this.state.IsLocationAvailable) {
             this.gpsSub?.unsubscribe();
@@ -257,31 +250,10 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
 
     }
 
-    private observeGpsLocation(client:any, lat:any, long:any, alt:any): Subscription {
+    private observeGpsLocation(): Subscription {
       return this.GpsLocation$.subscribe({
           next: value => {
             this.setState({gpsLocation: value});
-            let msg = 'vehicle coordonates: \n\r' + 'Latitude-> ' + lat + '\n\r' + 'Longitude-> ' + long + '\n\r' + 'Altitude-> ' + alt;
-
-            client.publish('Marian1r', msg, { qos: 0, retain: false }, function (error) {
-              if (error) {
-                console.log(error)
-              } else {
-                console.log('Published')
-              }
-            })
-
-            client.subscribe('Marian1r', { qos: 0 }, function (error, granted) {
-              if (error) {
-                console.log(error)
-              } else {
-                console.log(`${granted[0].topic} was subscribed`)
-              }
-            })   
-            client.on('message', function (topic, payload, packet) {
-              // Payload is Buffer
-              console.log(`Topic: ${topic}\n\r${payload.toString()}\n\rQoS: ${packet.qos}\n\r`)
-            })
           },
           error: err => console.log(err),//throwAsyncError(err),
           complete: () => console.log(`Completed observation of GPS location`),
