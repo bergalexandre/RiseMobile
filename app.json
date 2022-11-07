@@ -43,8 +43,7 @@
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
-    },
-    "sdkVersion": "44.0.0"
+    }
   },
   "name": "risemobile"
 }
