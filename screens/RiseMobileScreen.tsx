@@ -10,6 +10,7 @@ import * as Location from 'expo-location';
 import { Observable, Subscription } from 'rxjs';
 import { BleError, BleManager, Characteristic, Device, Service, Subscription as BleSubscription } from 'react-native-ble-plx'; 
 
+import mqtt from "precompiled-mqtt";
 
 type GPSReaderProps = {
   GpsLocation: Location.LocationObject
@@ -113,7 +114,6 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
         };
     }
 
-
     Increment() {
         this.setState({test: (this.state.test+1)})
     }
@@ -133,6 +133,31 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
         }
       }, true);
       
+      // mosquitto test broker
+      const URL = "mqtt://test.mosquitto.org:8080";
+
+      const client = mqtt.connect(URL);
+        
+      client.subscribe('Marian1r', { qos: 0 }, function (error, granted) {
+        if (error) {
+          console.log(error)
+        } else {
+          console.log(`${granted[0].topic} was subscribed`)
+        }
+      })   
+
+      client.publish('Marian1r', 'Hello, MQTT!', { qos: 0, retain: false }, function (error) {
+        if (error) {
+          console.log(error)
+        } else {
+          console.log('Published')
+        }
+      })
+
+      client.on('message', function (topic, payload, packet) {
+        // Payload is Buffer
+        console.log(`Topic: ${topic}, Message: ${payload.toString()}, QoS: ${packet.qos}`)
+      })
     }
     
     componentWillUnmount() {
