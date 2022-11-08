@@ -31,7 +31,7 @@
             "cwd": "${workspaceFolder}",
             "type": "reactnative",
             "request": "attach",
-            "port": 19001,
+            "port": 8081,
             "sourceMaps": true
         }
     ]
