@@ -8,7 +8,7 @@ import React from 'react';
 import { ErrorBoundary } from './ErrorBoundary';
 import * as Location from 'expo-location';
 import { Observable, Subscription } from 'rxjs';
-import { BleError, BleManager, Characteristic, Device, Service, Subscription as BleSubscription } from 'react-native-ble-plx'; 
+//import { BleError, BleManager, Characteristic, Device, Service, Subscription as BleSubscription } from 'react-native-ble-plx'; 
 
 import mqtt from "precompiled-mqtt";
 
@@ -95,20 +95,20 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
         }, 1000)
       });
 
-    private stm32Device ?: Device = undefined; 
-    private bleManager: BleManager = new BleManager();
+    //private stm32Device ?: Device = undefined; 
+    //private bleManager: BleManager = new BleManager();
     
     private gpsSub: Subscription|undefined;
-    private stm32Sub: Subscription|undefined;
+    //private stm32Sub: Subscription|undefined;
 
     constructor(props:HomeScreenProps) {
         super(props);
         this.state = { 
           test: 1, 
           gpsLocation: {coords: { latitude: 69, longitude: 69, altitude: 69}, timestamp: 69} as unknown as Location.LocationObject,
-          bluetoothErrorFlag: false,
+          //bluetoothErrorFlag: false,
           isMonitoringStarted: false,
-          isBluetoothAvailable: false,
+          //isBluetoothAvailable: false,
           IsLocationAvailable: false,
           debugStm32Message: "Aucun message"
         };
@@ -126,13 +126,14 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
           throw new Error(`Ne possède pas les permissions d'accèss pour la localisation GPS: ${msg}` );
         });
 
-      const subscription = this.bleManager.onStateChange((state) => {
-        if (state === 'PoweredOn') {
-            this.setState({isBluetoothAvailable: true});
-            subscription.remove();
-        }
-      }, true);
+      // const subscription = this.bleManager.onStateChange((state) => {
+      //   if (state === 'PoweredOn') {
+      //       this.setState({isBluetoothAvailable: true});
+      //       subscription.remove();
+      //   }
+      // }, true);
       
+
       // mosquitto test broker
       const URL = "mqtt://test.mosquitto.org:8080";
 
@@ -163,7 +164,7 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
     componentWillUnmount() {
       this.setState({isMonitoringStarted: false});
       this.gpsSub?.unsubscribe();
-      this.stm32Sub?.unsubscribe();
+      //this.stm32Sub?.unsubscribe();
 
     }
 
@@ -191,13 +192,13 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
       try {
         if(this.state.isMonitoringStarted == false) {
           this.setState({isMonitoringStarted: true})
-          if(this.state.isBluetoothAvailable) {
-            this.stm32Device = await this.scanAndConnect();
-            this.stm32Device = await this.stm32Device.connect();
-            this.stm32Device = await this.stm32Device?.discoverAllServicesAndCharacteristics();
-            let stm32SerialCharacteristic = await this.findSerialCharacteristicInDevice();
-            this.stm32Sub = this.observeSTM32Data(stm32SerialCharacteristic);
-          }
+          // if(this.state.isBluetoothAvailable) {
+          //   this.stm32Device = await this.scanAndConnect();
+          //   this.stm32Device = await this.stm32Device.connect();
+          //   this.stm32Device = await this.stm32Device?.discoverAllServicesAndCharacteristics();
+          //   let stm32SerialCharacteristic = await this.findSerialCharacteristicInDevice();
+          //   this.stm32Sub = this.observeSTM32Data(stm32SerialCharacteristic);
+          // }
           if(this.state.IsLocationAvailable) {
             this.gpsSub = this.observeGpsLocation();
           }
@@ -206,98 +207,135 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
           if(this.state.IsLocationAvailable) {
             this.gpsSub?.unsubscribe();
           }
-          if(this.state.isBluetoothAvailable) {
-            this.stm32Sub?.unsubscribe()
-            await this.stm32Device?.cancelConnection();
-          }
+          // if(this.state.isBluetoothAvailable) {
+          //   this.stm32Sub?.unsubscribe()
+          //   await this.stm32Device?.cancelConnection();
+          // }
         }
       } catch (error) {
-        if(error instanceof BleError) {
-          this.setState({bluetoothErrorFlag: true});
-          console.error("Erreur de connection");
-          console.error(error);
-        } else {
-          // rethrow si on ne la connait pas
-          //throwAsyncError(error)
-        }
+        // if(error instanceof BleError) {
+        //   this.setState({bluetoothErrorFlag: true});
+        //   console.error("Erreur de connection");
+        //   console.error(error);
+        // } else {
+        //   // rethrow si on ne la connait pas
+        //   //throwAsyncError(error)
+        // }
       }
     }
 
-    private async findSerialCharacteristicInDevice(): Promise<Characteristic> {
-      const stm32SerialServiceShortUUID: string = "ffe0";
-      const stm32SerialCharacteristicShortUUID: string = "ffe1";
-      let services: Service[] | undefined = await this.stm32Device?.services();
-      let stm32SerialService = services?.find((service) => service.uuid.includes(stm32SerialServiceShortUUID));
-      let characteristics = await stm32SerialService?.characteristics();
-      let stm32SerialCharacteristic = characteristics?.find(characteristic => characteristic.uuid.includes(stm32SerialCharacteristicShortUUID));
+    // private async findSerialCharacteristicInDevice(): Promise<Characteristic> {
+    //   const stm32SerialServiceShortUUID: string = "ffe0";
+    //   const stm32SerialCharacteristicShortUUID: string = "ffe1";
+    //   let services: Service[] | undefined = await this.stm32Device?.services();
+    //   let stm32SerialService = services?.find((service) => service.uuid.includes(stm32SerialServiceShortUUID));
+    //   let characteristics = await stm32SerialService?.characteristics();
+    //   let stm32SerialCharacteristic = characteristics?.find(characteristic => characteristic.uuid.includes(stm32SerialCharacteristicShortUUID));
       
-      if(stm32SerialCharacteristic === undefined) {
-        throw new Error(`Caractéristique pas trouvé dans la liste des services ${services}`);
-      }
-      return stm32SerialCharacteristic;
+    //   if(stm32SerialCharacteristic === undefined) {
+    //     throw new Error(`Caractéristique pas trouvé dans la liste des services ${services}`);
+    //   }
+    //   return stm32SerialCharacteristic;
 
-    }
+    // }
 
     private observeGpsLocation(): Subscription {
       return this.GpsLocation$.subscribe({
           next: value => {
-            this.setState({gpsLocation: value});
+            this.setState({gpsLocation: value}) 
+            this.sendGPSLocation({gpsLocation: value});
           },
           error: err => console.log(err),//throwAsyncError(err),
           complete: () => console.log(`Completed observation of GPS location`),
         });
     }
 
-    private createSTM32Observer$(serialCharacteristic: Characteristic): Observable<string> {
-      return new Observable<string>(subscriber => {
-        let hm10Monitor = serialCharacteristic.monitor((error, characteristic) => {
-          if(error != undefined) {
-            subscriber.error(error);
-          } else {
-            subscriber.next(
-              characteristic?.value == undefined ? "Aucun message": Buffer.from(characteristic?.value, "base64").toString()
-            )
-          }
-        });
-        let timer = setInterval(async () => {
-          try {
-            await serialCharacteristic.writeWithoutResponse(Buffer.from("Allo").toString("base64"));
-          } catch (error) {
-            subscriber.error(error)
-          }
-          
-          if(this.state.isMonitoringStarted === false) {
-            clearInterval(timer);
-            hm10Monitor?.remove()
-          }
-        }, 1000)
-      });
-    }
+    private sendGPSLocation(gpsLocation: any) : string{
+      
+      var lat = gpsLocation.coords?.latitude;
+      var long = gpsLocation.coords?.longitude;
+      
 
-    private observeSTM32Data(serialCharacteristic: Characteristic): Subscription {
-      return this.createSTM32Observer$(serialCharacteristic).subscribe({
-          next: value => {
-            this.setState({debugStm32Message: value});
-          },
-          error: err => console.log(err),//throwAsyncError(err),
-          complete: () => console.log(`Completed observation of GPS location`),
-        });
-    }
+      // mosquitto test broker
+      const URL = "mqtt://test.mosquitto.org:8080";
 
-    private scanAndConnect(): Promise<Device> {
-      return new Promise( (resolve) => {
-        this.bleManager.startDeviceScan(null, null, (error, device) => {
-          if(error) {
-            throw error;
-          }
-          if(device?.name ===  "purplezerg") {
-            // Stop scanning as it's not necessary if you are scanning for one device.
-            this.bleManager.stopDeviceScan();
-            resolve(device)
-          }
-        })
+      const client = mqtt.connect(URL);
+        
+      client.subscribe('Rise-GPS-Data', { qos: 0 }, function (error, granted) {
+        if (error) {
+          console.log(error)
+        } else {
+          console.log(`${granted[0].topic} was subscribed`)
+        }
+      })   
+      
+      let msg = 'vehicle coordonates: \n\r' + 'Latitude-> ' + lat + '\n\r' + 'Longitude-> ' + long
+
+      client.publish('Rise-GPS-Data', msg, { qos: 0, retain: false }, function (error) {
+        if (error) {
+          console.log(error)
+        } else {
+          console.log('Published')
+        }
       })
+
+      client.on('message', function (topic, payload, packet) {
+        // Payload is Buffer
+        console.log(`Topic: ${topic}, Message: ${payload.toString()}, QoS: ${packet.qos}`)
+      })
+      return 'ok';
     }
+
+    // private createSTM32Observer$(serialCharacteristic: Characteristic): Observable<string> {
+    //   return new Observable<string>(subscriber => {
+    //     let hm10Monitor = serialCharacteristic.monitor((error, characteristic) => {
+    //       if(error != undefined) {
+    //         subscriber.error(error);
+    //       } else {
+    //         subscriber.next(
+    //           characteristic?.value == undefined ? "Aucun message": Buffer.from(characteristic?.value, "base64").toString()
+    //         )
+    //       }
+    //     });
+    //     let timer = setInterval(async () => {
+    //       try {
+    //         await serialCharacteristic.writeWithoutResponse(Buffer.from("Allo").toString("base64"));
+    //       } catch (error) {
+    //         subscriber.error(error)
+    //       }
+          
+    //       if(this.state.isMonitoringStarted === false) {
+    //         clearInterval(timer);
+    //         hm10Monitor?.remove()
+    //       }
+    //     }, 1000)
+    //   });
+    // }
+
+    // private observeSTM32Data(serialCharacteristic: Characteristic): Subscription {
+    //   return this.createSTM32Observer$(serialCharacteristic).subscribe({
+    //       next: value => {
+    //         this.setState({debugStm32Message: value});
+    //       },
+    //       error: err => console.log(err),//throwAsyncError(err),
+    //       complete: () => console.log(`Completed observation of GPS location`),
+    //     });
+    // }
+
+    // private scanAndConnect(): Promise<Device> {
+    //   return new Promise( (resolve) => {
+    //     this.bleManager.startDeviceScan(null, null, (error, device) => {
+    //       if(error) {
+    //         throw error;
+    //       }
+    //       if(device?.name ===  "purplezerg") {
+    //         // Stop scanning as it's not necessary if you are scanning for one device.
+    //         this.bleManager.stopDeviceScan();
+    //         resolve(device)
+    //       }
+    //     })
+    //   })
+    // }
 }
 
 const styles = StyleSheet.create({
