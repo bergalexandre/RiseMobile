@@ -93,10 +93,15 @@ Créer un émulateur a l'aide d'android studio
 
 npm start
 a :ouvrir l'app mobile dans l'émulateur
+
 m :ouvir le menu de developpeur dans l'app
+
 enable le mode debug
+
 attach to packager dans le menu run and debug dans VScode
+
 r: reload l'app mobile
+
 
 À noter que si ya des erreurs provenant du Bluetooth, il faut d'esactiver la connexion bluetooth sur l'emulateur pour by passer les erreurs.
 
