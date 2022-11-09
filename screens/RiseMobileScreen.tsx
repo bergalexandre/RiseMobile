@@ -10,6 +10,7 @@ import * as Location from 'expo-location';
 import { Observable, Subscription } from 'rxjs';
 import { BleError, BleManager, Characteristic, Device, Service, Subscription as BleSubscription } from 'react-native-ble-plx'; 
 
+import mqtt from "precompiled-mqtt";
 
 type GPSReaderProps = {
   GpsLocation: Location.LocationObject
@@ -59,19 +60,6 @@ type RiseMobileScreenState = {
   IsLocationAvailable: boolean,
   debugStm32Message: string
 }
-/*
-const useAsyncError = () => {
-  const [_, setError] = React.useState();
-  return React.useCallback(
-    e => {
-      setError(() => {
-        throw e;
-      });
-    },
-    [setError],
-  );
-};
-const throwAsyncError = useAsyncError();*/
 
 export default class RiseMobileScreen extends React.Component<HomeScreenProps, RiseMobileScreenState>
 {
@@ -114,7 +102,6 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
         };
     }
 
-
     Increment() {
         this.setState({test: (this.state.test+1)})
     }
@@ -135,7 +122,6 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
             console.log(`Nouvel état de l'antenne BLE = ${state}`);
         }
       }, true);
-      
     }
     
     componentWillUnmount() {
@@ -220,11 +206,43 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
     private observeGpsLocation(): Subscription {
       return this.GpsLocation$.subscribe({
           next: value => {
-            this.setState({gpsLocation: value});
+            this.setState({gpsLocation: value}) 
+            this.sendGPSLocation(value);
           },
           error: err => console.log(err),//throwAsyncError(err),
           complete: () => console.log(`Completed observation of GPS location`),
         });
+    }
+
+    private sendGPSLocation(gpsLocation: Location.LocationObject){
+      
+      var lat = gpsLocation.coords.latitude;
+      var long = gpsLocation.coords.longitude;
+
+      let msg = 'vehicle coordonates: \n\r' + 'Latitude-> ' + lat + '\n\r' + 'Longitude-> ' + long
+
+      const URL = "mqtt://test.mosquitto.org:8080";
+      const client = mqtt.connect(URL);
+        
+      client.subscribe('Rise-GPS-Data', { qos: 0 }, function (error, granted) {
+        if (error) {
+          console.log(error)
+        } else {
+          console.log(`${granted[0].topic} was subscribed`)
+        }
+      })   
+      
+      client.publish('Rise-GPS-Data', msg, { qos: 0, retain: false }, function (error) {
+        if (error) {
+          console.log(error)
+        } else {
+          console.log('Published')
+        }
+      })
+
+      client.on('message', function (topic, payload, packet) {
+        console.log(`Topic: ${topic}, Message: ${payload.toString()}, QoS: ${packet.qos}`)
+      })
     }
 
     private createSTM32Observer$(serialCharacteristic: Characteristic): Observable<string> {
@@ -257,10 +275,27 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
       return this.createSTM32Observer$(serialCharacteristic).subscribe({
           next: value => {
             this.setState({debugStm32Message: value});
+            this.sendBluetoothData(value);
           },
           error: err => console.log(err),//throwAsyncError(err),
           complete: () => console.log(`Completed observation of GPS location`),
         });
+    }
+
+    private sendBluetoothData(bleData: string){
+      
+      let msg = bleData;
+
+      const URL = "mqtt://test.mosquitto.org:8080";
+      const client = mqtt.connect(URL);
+            
+      client.publish('Rise-ble-Data', msg, { qos: 0, retain: false }, function (error) {
+        if (error) {
+          console.log(error)
+        } else {
+          console.log('Published')
+        }
+      })
     }
 
     private scanAndConnect(): Promise<Device> {
