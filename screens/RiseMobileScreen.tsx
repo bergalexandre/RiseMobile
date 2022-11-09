@@ -275,10 +275,27 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
       return this.createSTM32Observer$(serialCharacteristic).subscribe({
           next: value => {
             this.setState({debugStm32Message: value});
+            this.sendBluetoothData(value);
           },
           error: err => console.log(err),//throwAsyncError(err),
           complete: () => console.log(`Completed observation of GPS location`),
         });
+    }
+
+    private sendBluetoothData(bleData: string){
+      
+      let msg = bleData;
+
+      const URL = "mqtt://test.mosquitto.org:8080";
+      const client = mqtt.connect(URL);
+            
+      client.publish('Rise-ble-Data', msg, { qos: 0, retain: false }, function (error) {
+        if (error) {
+          console.log(error)
+        } else {
+          console.log('Published')
+        }
+      })
     }
 
     private scanAndConnect(): Promise<Device> {
