@@ -97,7 +97,8 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
 
     private stm32Device ?: Device = undefined; 
     private bleManager: BleManager = new BleManager();
-    
+    private bleStateWatcher ?: BleSubscription;
+
     private gpsSub: Subscription|undefined;
     private stm32Sub: Subscription|undefined;
 
@@ -126,10 +127,12 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
           throw new Error(`Ne possède pas les permissions d'accèss pour la localisation GPS: ${msg}` );
         });
 
-      const subscription = this.bleManager.onStateChange((state) => {
+        this.bleStateWatcher = this.bleManager.onStateChange((state) => {
         if (state === 'PoweredOn') {
             this.setState({isBluetoothAvailable: true});
-            subscription.remove();
+        } else {
+            this.setState({isBluetoothAvailable: false});
+            console.log(`Nouvel état de l'antenne BLE = ${state}`);
         }
       }, true);
     }
@@ -138,6 +141,7 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
       this.setState({isMonitoringStarted: false});
       this.gpsSub?.unsubscribe();
       this.stm32Sub?.unsubscribe();
+      this.bleStateWatcher?.remove();
 
     }
 
