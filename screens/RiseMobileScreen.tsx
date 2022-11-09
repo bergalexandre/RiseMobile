@@ -250,7 +250,7 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
         });
     }
 
-    private sendGPSLocation(gpsLocation: any) : string{
+    private sendGPSLocation(gpsLocation: any){
       
       var lat = gpsLocation.coords?.latitude;
       var long = gpsLocation.coords?.longitude;
@@ -283,7 +283,6 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
         // Payload is Buffer
         console.log(`Topic: ${topic}, Message: ${payload.toString()}, QoS: ${packet.qos}`)
       })
-      return 'ok';
     }
 
     // private createSTM32Observer$(serialCharacteristic: Characteristic): Observable<string> {
