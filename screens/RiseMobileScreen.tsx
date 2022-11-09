@@ -8,7 +8,7 @@ import React from 'react';
 import { ErrorBoundary } from './ErrorBoundary';
 import * as Location from 'expo-location';
 import { Observable, Subscription } from 'rxjs';
-//import { BleError, BleManager, Characteristic, Device, Service, Subscription as BleSubscription } from 'react-native-ble-plx'; 
+import { BleError, BleManager, Characteristic, Device, Service, Subscription as BleSubscription } from 'react-native-ble-plx'; 
 
 import mqtt from "precompiled-mqtt";
 
@@ -60,19 +60,6 @@ type RiseMobileScreenState = {
   IsLocationAvailable: boolean,
   debugStm32Message: string
 }
-
-const useAsyncError = () => {
-  const [_, setError] = React.useState();
-  return React.useCallback(
-    e => {
-      setError(() => {
-        throw e;
-      });
-    },
-    [setError],
-  );
-};
-const throwAsyncError = useAsyncError();
 
 export default class RiseMobileScreen extends React.Component<HomeScreenProps, RiseMobileScreenState>
 {
