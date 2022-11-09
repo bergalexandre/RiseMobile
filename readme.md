@@ -87,7 +87,30 @@ Si ça marche pas, allez voir la [réponse à Mahmoud Farahat](https://stackover
 
 ### Debug avec un android
 
-¯\\_(ツ)_/¯
+Pour la premiere fois, il faut suivre ces étapes :
+
+Créer un émulateur a l'aide d'android studio
+
+npm start
+a :ouvrir l'app mobile dans l'émulateur
+
+m :ouvir le menu de developpeur dans l'app
+
+enable le mode debug
+
+attach to packager dans le menu run and debug dans VScode
+
+r: reload l'app mobile
+
+
+À noter que si ya des erreurs provenant du Bluetooth, il faut d'esactiver la connexion bluetooth sur l'emulateur pour by passer les erreurs.
+
+Après la première fois :
+
+npm start
+a
+attach to packager
+a ou r (dépendement si l'app est partie ou pas)
 
 ## Package android
 
