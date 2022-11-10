@@ -1,4 +1,4 @@
-import { Button, StyleSheet } from 'react-native';
+import { Button, StyleSheet, PermissionsAndroid } from 'react-native';
 
 import EditScreenInfo from '../components/EditScreenInfo';
 import { Text, View } from '../components/Themed';
@@ -8,9 +8,8 @@ import React from 'react';
 import { ErrorBoundary } from './ErrorBoundary';
 import * as Location from 'expo-location';
 import { Observable, Subscription } from 'rxjs';
-import { BleError, BleManager, Characteristic, Device, Service, Subscription as BleSubscription } from 'react-native-ble-plx'; 
-
-import mqtt from "precompiled-mqtt";
+import { BleError, BleManager, Characteristic, Device, Service, Subscription as BleSubscription } from 'react-native-ble-plx';
+import mqtt, { MqttClient } from "precompiled-mqtt";
 
 type GPSReaderProps = {
   GpsLocation: Location.LocationObject
@@ -89,6 +88,8 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
     private gpsSub: Subscription|undefined;
     private stm32Sub: Subscription|undefined;
 
+    private mqttClient: MqttClient|undefined;
+
     constructor(props:HomeScreenProps) {
         super(props);
         this.state = { 
@@ -114,14 +115,25 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
           throw new Error(`Ne possède pas les permissions d'accèss pour la localisation GPS: ${msg}` );
         });
 
+        const requestBLEPermissions = async () => {
+          await PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION)
+          await PermissionsAndroid.requestMultiple([ PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN, PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT])
+        }
+
+        
         this.bleStateWatcher = this.bleManager.onStateChange((state) => {
         if (state === 'PoweredOn') {
-            this.setState({isBluetoothAvailable: true});
+            requestBLEPermissions().then(() => {
+              this.setState({isBluetoothAvailable: true});
+            }).catch((error) => {
+              throw new error(`Ne possède pas les permissions pour le BLE: ${error}`);
+            });
         } else {
             this.setState({isBluetoothAvailable: false});
             console.log(`Nouvel état de l'antenne BLE = ${state}`);
         }
       }, true);
+      this.init_mqtt_client();
     }
     
     componentWillUnmount() {
@@ -203,6 +215,11 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
 
     }
 
+    private init_mqtt_client(): void {
+      const URL = "mqtt://test.mosquitto.org:8080";
+      this.mqttClient = mqtt.connect(URL);
+    }
+
     private observeGpsLocation(): Subscription {
       return this.GpsLocation$.subscribe({
           next: value => {
@@ -212,37 +229,6 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
           error: err => console.log(err),//throwAsyncError(err),
           complete: () => console.log(`Completed observation of GPS location`),
         });
-    }
-
-    private sendGPSLocation(gpsLocation: Location.LocationObject){
-      
-      var lat = gpsLocation.coords.latitude;
-      var long = gpsLocation.coords.longitude;
-
-      let msg = 'vehicle coordonates: \n\r' + 'Latitude-> ' + lat + '\n\r' + 'Longitude-> ' + long
-
-      const URL = "mqtt://test.mosquitto.org:8080";
-      const client = mqtt.connect(URL);
-        
-      client.subscribe('Rise-GPS-Data', { qos: 0 }, function (error, granted) {
-        if (error) {
-          console.log(error)
-        } else {
-          console.log(`${granted[0].topic} was subscribed`)
-        }
-      })   
-      
-      client.publish('Rise-GPS-Data', msg, { qos: 0, retain: false }, function (error) {
-        if (error) {
-          console.log(error)
-        } else {
-          console.log('Published')
-        }
-      })
-
-      client.on('message', function (topic, payload, packet) {
-        console.log(`Topic: ${topic}, Message: ${payload.toString()}, QoS: ${packet.qos}`)
-      })
     }
 
     private createSTM32Observer$(serialCharacteristic: Characteristic): Observable<string> {
@@ -282,22 +268,6 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
         });
     }
 
-    private sendBluetoothData(bleData: string){
-      
-      let msg = bleData;
-
-      const URL = "mqtt://test.mosquitto.org:8080";
-      const client = mqtt.connect(URL);
-            
-      client.publish('Rise-ble-Data', msg, { qos: 0, retain: false }, function (error) {
-        if (error) {
-          console.log(error)
-        } else {
-          console.log('Published')
-        }
-      })
-    }
-
     private scanAndConnect(): Promise<Device> {
       return new Promise( (resolve) => {
         this.bleManager.startDeviceScan(null, null, (error, device) => {
@@ -311,6 +281,53 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
           }
         })
       })
+    }
+
+    private sendBluetoothData(bleData: string){
+      this.mqttClient?.publish(
+        'Rise-ble-Data', 
+        bleData, 
+        { qos: 0, retain: false }, 
+        (error) => {
+          if (error) {
+            console.error(error)
+          } else {
+            console.log('Published')
+          }
+        }
+      )
+    }
+
+    private sendGPSLocation(gpsLocation: Location.LocationObject){
+      var lat = gpsLocation.coords.latitude;
+      var long = gpsLocation.coords.longitude;
+
+      let msg = 'vehicle coordonates: \n\r' + 'Latitude-> ' + lat + '\n\r' + 'Longitude-> ' + long
+      /*
+      client.subscribe('Rise-GPS-Data', { qos: 0 }, function (error, granted) {
+        if (error) {
+          console.log(error)
+        } else {
+          console.log(`${granted[0].topic} was subscribed`)
+        }
+      })   
+      client.on('message', function (topic, payload, packet) {
+        console.log(`Topic: ${topic}, Message: ${payload.toString()}, QoS: ${packet.qos}`)
+      })
+      */
+      
+      this.mqttClient?.publish(
+        'Rise-GPS-Data', 
+        msg, 
+        { qos: 0, retain: false }, 
+        (error) => {
+          if (error) {
+            console.log(error)
+          } else {
+            console.log('Published')
+          }
+        }
+      )
     }
 }
 
