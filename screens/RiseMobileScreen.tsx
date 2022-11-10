@@ -215,7 +215,7 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
     }
 
     private sendGPSLocation(gpsLocation: Location.LocationObject){
-      
+    
       var lat = gpsLocation.coords.latitude;
       var long = gpsLocation.coords.longitude;
 
@@ -239,6 +239,8 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
           console.log('Published')
         }
       })
+
+      client.end();
 
       client.on('message', function (topic, payload, packet) {
         console.log(`Topic: ${topic}, Message: ${payload.toString()}, QoS: ${packet.qos}`)
