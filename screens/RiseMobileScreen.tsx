@@ -213,14 +213,14 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
       return this.GpsLocation$.subscribe({
           next: value => {
             this.setState({gpsLocation: value}) 
-            this.sendGPSLocation(value);
+            this.sendGPSLocationToMQTT(value);
           },
           error: err => console.log(err),//throwAsyncError(err),
           complete: () => console.log(`Completed observation of GPS location`),
         });
     }
 
-    private sendGPSLocation(gpsLocation: Location.LocationObject){
+    private sendGPSLocationToMQTT(gpsLocation: Location.LocationObject){
     
       var lat = String(gpsLocation.coords.latitude);
       var long = String(gpsLocation.coords.longitude);
@@ -283,20 +283,17 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
       return this.createSTM32Observer$(serialCharacteristic).subscribe({
           next: value => {
             this.setState({debugStm32Message: value});
-            this.sendBluetoothData(value);
+            this.sendSTM32DataToMqtt(value);
           },
           error: err => console.log(err),//throwAsyncError(err),
           complete: () => console.log(`Completed observation of GPS location`),
         });
     }
 
-    private sendBluetoothData(bleData: string){
+    private sendSTM32DataToMqtt(bleData: string){
       
       let msg = bleData;
 
-      const URL = "mqtt://test.mosquitto.org:8080";
-      const client = mqtt.connect(URL);
-            
       client.publish('Rise-ble-Data', msg, { qos: 0, retain: false }, function (error) {
         if (error) {
           console.log(error)
