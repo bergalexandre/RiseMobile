@@ -9,6 +9,8 @@ import { ErrorBoundary } from './ErrorBoundary';
 import * as Location from 'expo-location';
 import { Observable, Subscription } from 'rxjs';
 import { BleError, BleManager, Characteristic, Device, Service, Subscription as BleSubscription } from 'react-native-ble-plx'; 
+import { Accelerometer, ThreeAxisMeasurement } from 'expo-sensors';
+import { Gyroscope } from 'expo-sensors';
 
 import mqtt from "precompiled-mqtt";
 
@@ -54,6 +56,7 @@ export type HomeScreenProps = {
 type RiseMobileScreenState = {
   test: number,
   gpsLocation: Location.LocationObject,
+  accelerometerData: ThreeAxisMeasurement,
   bluetoothErrorFlag: boolean
   isMonitoringStarted: boolean,
   isBluetoothAvailable: boolean,
@@ -87,6 +90,8 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
     private bleStateWatcher ?: BleSubscription;
 
     private gpsSub: Subscription|undefined;
+    private accSub: Subscription|undefined;
+    private gyroSub: Subscription|undefined;
     private stm32Sub: Subscription|undefined;
 
     constructor(props:HomeScreenProps) {
@@ -94,6 +99,11 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
         this.state = { 
           test: 1, 
           gpsLocation: {coords: { latitude: 69, longitude: 69, altitude: 69}, timestamp: 69} as unknown as Location.LocationObject,
+          accelerometerData: {
+            x: 0,
+            y: 0,
+            z: 0,
+          },
           bluetoothErrorFlag: false,
           isMonitoringStarted: false,
           isBluetoothAvailable: false,
@@ -187,7 +197,7 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
         }
       }
     }
-
+    
     private async findSerialCharacteristicInDevice(): Promise<Characteristic> {
       const stm32SerialServiceShortUUID: string = "ffe0";
       const stm32SerialCharacteristicShortUUID: string = "ffe1";
