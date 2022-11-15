@@ -9,10 +9,11 @@ import { ErrorBoundary } from './ErrorBoundary';
 import * as Location from 'expo-location';
 import { Observable, Subscription } from 'rxjs';
 import { BleError, BleManager, Characteristic, Device, Service, Subscription as BleSubscription } from 'react-native-ble-plx'; 
-import { Accelerometer, ThreeAxisMeasurement } from 'expo-sensors';
+import { Accelerometer, ThreeAxisMeasurement, DeviceMotion, DeviceMotionMeasurement } from 'expo-sensors';
 import { Gyroscope } from 'expo-sensors';
 
 import mqtt from "precompiled-mqtt";
+
 
 type GPSReaderProps = {
   GpsLocation: Location.LocationObject
@@ -48,6 +49,8 @@ const GPSReadOptions: Location.LocationOptions = {
   distanceInterval: undefined
 }
 
+//const [subscription, setSubscription] = useState(null);
+
 export type HomeScreenProps = {
   navigation: RootTabScreenProps<'TabOne'>
 }
@@ -56,7 +59,7 @@ export type HomeScreenProps = {
 type RiseMobileScreenState = {
   test: number,
   gpsLocation: Location.LocationObject,
-  accelerometerData: ThreeAxisMeasurement,
+  //accelerometerData: ThreeAxisMeasurement,
   bluetoothErrorFlag: boolean
   isMonitoringStarted: boolean,
   isBluetoothAvailable: boolean,
@@ -64,18 +67,28 @@ type RiseMobileScreenState = {
   debugStm32Message: string
 }
 
-export default class RiseMobileScreen extends React.Component<HomeScreenProps, RiseMobileScreenState>
+// const [{ x, y, z }, accelerometerData] = useState({
+//   x: 0,
+//   y: 0,
+//   z: 0,
+// });
+
+export default class RiseMobileScreen extends React.Component<HomeScreenProps, RiseMobileScreenState,>
 {
+  // L'argument générique de l'observable c'est le type que tu doit envoyer dans subscriber.next
     private readonly GpsLocation$ = 
       new Observable<Location.LocationObject>(subscriber => {
+        //YO NVM c'est pour éviter de faire la demande en double si le GPS répondait pas en 1s (vu que l'interval se répétait à toute les secondes)
         let locationRequestOver: boolean = true;
+        //L'interval ici c'est pour récupérer une nouvelle position puis la pousser dans le subscriber
         let timer = setInterval(() => {
           if(locationRequestOver == true) {
+            //Remplace location.getCurrentPositionAsync par ce que tu as besoin (ligne 103 à 111)
             locationRequestOver = false;
             Location.getCurrentPositionAsync(GPSReadOptions)
-              .then(location => subscriber.next(location))
-              .catch(reason => subscriber.error(reason))
-              .finally(() => {
+              .then(location => subscriber.next(location)) // Si la promesse à marché
+              .catch(reason => subscriber.error(reason)) // Si la promesse à eu une erreur
+              .finally(() => {                          // Après soit l'erreur ou la réussite de la promesse
                 locationRequestOver = true;
                 if(this.state.isMonitoringStarted === false) {
                   clearInterval(timer);
@@ -85,6 +98,12 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
         }, 1000)
       });
 
+    // private readonly Accelerometer$ = 
+    //   new Observable<ThreeAxisMeasurement>(subscriber => {
+    //     //Accelerometer.addListener(accelerometerData)
+    //     //Accelerometer.setUpdateInterval(1000);
+    // });
+        
     private stm32Device ?: Device = undefined; 
     private bleManager: BleManager = new BleManager();
     private bleStateWatcher ?: BleSubscription;
@@ -93,17 +112,18 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
     private accSub: Subscription|undefined;
     private gyroSub: Subscription|undefined;
     private stm32Sub: Subscription|undefined;
+    private subscription: Subscription | undefined;
 
     constructor(props:HomeScreenProps) {
         super(props);
         this.state = { 
           test: 1, 
           gpsLocation: {coords: { latitude: 69, longitude: 69, altitude: 69}, timestamp: 69} as unknown as Location.LocationObject,
-          accelerometerData: {
-            x: 0,
-            y: 0,
-            z: 0,
-          },
+          // accelerometerData: {
+          //   x: 0,
+          //   y: 0,
+          //   z: 0,
+          // },
           bluetoothErrorFlag: false,
           isMonitoringStarted: false,
           isBluetoothAvailable: false,
@@ -111,7 +131,9 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
           debugStm32Message: "Aucun message"
         };
     }
-
+    //Monte la avec stm32 sub et tout, et aussi dit pour qui (accéléromètre?)
+    //private subscription: Subscription | undefined;
+    
     Increment() {
         this.setState({test: (this.state.test+1)})
     }
@@ -132,6 +154,7 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
             console.log(`Nouvel état de l'antenne BLE = ${state}`);
         }
       }, true);
+      //Accelerometer.getPermissionsAsync()
     }
     
     componentWillUnmount() {
@@ -161,7 +184,7 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
         </ErrorBoundary>
       );
   }
-
+  
     private async monitorRiseVehicule(): Promise<void> {
       try {
         if(this.state.isMonitoringStarted == false) {
@@ -212,6 +235,17 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
       return stm32SerialCharacteristic;
 
     }
+
+    //Ici tu observes les localisation gps avec GpsLocation$. Crée toi une variable Accelerometer$
+    // private observeAccelerometer(): Subscription {
+    //   return this.Accelerometer$.subscribe({
+    //       next: value => {
+    //         this.setState({accelerometerData: value}) 
+    //       },
+    //       error: err => console.log(err),//throwAsyncError(err),
+    //       complete: () => console.log(`Completed observation of GPS location`),
+    //     });
+    // }
 
     private observeGpsLocation(): Subscription {
       return this.GpsLocation$.subscribe({
