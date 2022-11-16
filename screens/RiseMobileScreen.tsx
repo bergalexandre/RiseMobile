@@ -219,12 +219,17 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
       var lat = gpsLocation.coords.latitude;
       var long = gpsLocation.coords.longitude;
 
-      let msg = 'vehicle coordonates: \n\r' + 'Latitude-> ' + lat + '\n\r' + 'Longitude-> ' + long
+      var timestamp = gpsLocation.timestamp;
+      var date = new Date(timestamp).toLocaleString("fr-CA");
+
+      var jsonPosition = '{ "coordonee" : [ ' + 
+        '{ "latitude":' + lat.toString() + ', "longitude":' + long.toString() + ', "timestamp":' + date + '} ' +
+      '] }';
 
       const URL = "mqtt://test.mosquitto.org:8080";
       const client = mqtt.connect(URL);
         
-      client.subscribe('Rise-GPS-Data', { qos: 0 }, function (error, granted) {
+      client.subscribe('Rise-GPS-Position', { qos: 0 }, function (error, granted) {
         if (error) {
           console.log(error)
         } else {
@@ -232,7 +237,28 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
         }
       })   
       
-      client.publish('Rise-GPS-Data', msg, { qos: 0, retain: false }, function (error) {
+      client.publish('Rise-GPS-Position', jsonPosition, { qos: 0, retain: false }, function (error) {
+        if (error) {
+          console.log(error)
+        } else {
+          console.log('Published')
+        }
+      })
+
+      //cahnger de place pour etre dans le ble
+      var jsonData = '{ "data" : [ ' + 
+        '{ "timestamp":' + date + '} ' +
+      '] }';
+
+      client.subscribe('Rise-BLE-Data', { qos: 0 }, function (error, granted) {
+        if (error) {
+          console.log(error)
+        } else {
+          console.log(`${granted[0].topic} was subscribed`)
+        }
+      })   
+      
+      client.publish('Rise-BLE-Data', jsonData, { qos: 0, retain: false }, function (error) {
         if (error) {
           console.log(error)
         } else {
