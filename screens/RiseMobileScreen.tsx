@@ -245,7 +245,7 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
         }
       })
 
-      //cahnger de place pour etre dans le ble
+      //changer de place pour etre dans le ble
       var jsonData = '{ "data" : [ ' + 
         '{ "timestamp":' + date + '} ' +
       '] }';
