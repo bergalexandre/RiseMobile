@@ -1,5 +1,10 @@
 # Rise BluetoothToMqtt
 
+# Politique de confidentialité
+L'application receuille des données de localisations et de télémétries. Ces données ne sont pas préservé de façon confidentiels et peuvent être enregistrées. 
+
+
+# Application
 L'application va transférer le data du véhicule rise vers une destination de notre choix.
 
 Pour déterminer la position du véhicule, j'ai utilisé le package [expo-location](https://docs.expo.dev/versions/latest/sdk/location/)
