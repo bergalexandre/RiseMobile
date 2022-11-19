@@ -231,15 +231,27 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
         });
     }
 
-    private createSTM32Observer$(serialCharacteristic: Characteristic): Observable<string> {
-      return new Observable<string>(subscriber => {
+    private createSTM32Observer$(serialCharacteristic: Characteristic): Observable<Buffer> {
+      let reception_buffer: Array<Buffer> = [];
+
+      return new Observable<Buffer>(subscriber => {
         let hm10Monitor = serialCharacteristic.monitor((error, characteristic) => {
           if(error != undefined) {
             subscriber.error(error);
           } else {
-            subscriber.next(
-              characteristic?.value == undefined ? "Aucun message": Buffer.from(characteristic?.value, "base64").toString()
-            )
+            let received_data: string = characteristic?.value == undefined ? "Aucun message": Buffer.from(characteristic?.value, "base64").toString();
+            
+            if(received_data.endsWith("end")) {
+              let data_buffer = characteristic?.value == undefined ? Buffer.from(""): Buffer.from(characteristic?.value.slice(0, -3), "base64");
+              reception_buffer.push(data_buffer);
+              
+              subscriber.next(Buffer.concat(reception_buffer));
+              reception_buffer = [];
+            } else if(received_data == "Aucun message") {
+            } else {
+              let data_buffer = characteristic?.value == undefined ? Buffer.from(""): Buffer.from(characteristic?.value, "base64");
+              reception_buffer.push(data_buffer);
+            }
           }
         });
         let timer = setInterval(async () => {
@@ -260,7 +272,7 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
     private observeSTM32Data(serialCharacteristic: Characteristic): Subscription {
       return this.createSTM32Observer$(serialCharacteristic).subscribe({
           next: value => {
-            this.setState({debugStm32Message: value});
+            this.setState({debugStm32Message: value.toString("hex")});
             this.sendBluetoothData(value);
           },
           error: err => console.log(err),//throwAsyncError(err),
@@ -283,7 +295,7 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
       })
     }
 
-    private sendBluetoothData(bleData: string){
+    private sendBluetoothData(bleData: Buffer){
       this.mqttClient?.publish(
         'Rise-ble-Data', 
         bleData, 
