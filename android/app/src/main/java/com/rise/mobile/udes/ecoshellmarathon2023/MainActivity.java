@@ -1,4 +1,4 @@
-package com.rise.mobile;
+package com.rise.mobile.udes.ecoshellmarathon2023;
 
 import android.os.Build;
 import android.os.Bundle;

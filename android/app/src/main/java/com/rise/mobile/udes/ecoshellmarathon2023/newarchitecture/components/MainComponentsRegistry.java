@@ -1,4 +1,4 @@
-package com.rise.mobile.newarchitecture.components;
+package com.rise.mobile.udes.ecoshellmarathon2023.newarchitecture.components;
 
 import com.facebook.jni.HybridData;
 import com.facebook.proguard.annotations.DoNotStrip;
