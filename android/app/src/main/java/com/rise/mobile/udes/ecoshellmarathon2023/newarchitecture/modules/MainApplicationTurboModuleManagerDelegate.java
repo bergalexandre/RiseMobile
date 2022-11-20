@@ -1,4 +1,4 @@
-package com.rise.mobile.newarchitecture.modules;
+package com.rise.mobile.udes.ecoshellmarathon2023.newarchitecture.modules;
 
 import com.facebook.jni.HybridData;
 import com.facebook.react.ReactPackage;
