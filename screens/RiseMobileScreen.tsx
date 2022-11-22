@@ -222,9 +222,9 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
       var timestamp = gpsLocation.timestamp;
       var date = new Date(timestamp).toLocaleString("fr-CA");
 
-      var jsonPosition = '{ "coordonee" : [ ' + 
+      var jsonPosition = '{ "coordonee" : ' + 
         '{ "latitude":' + lat.toString() + ', "longitude":' + long.toString() + ', "timestamp":' + date + '} ' +
-      '] }';
+      '}';
 
       const URL = "mqtt://test.mosquitto.org:8080";
       const client = mqtt.connect(URL);
