@@ -255,11 +255,11 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
           }
         });
         let timer = setInterval(async () => {
-          try {
+          /*try {
             await serialCharacteristic.writeWithoutResponse(Buffer.from("Allo").toString("base64"));
           } catch (error) {
             subscriber.error(error)
-          }
+          }*/
           
           if(this.state.isMonitoringStarted === false) {
             clearInterval(timer);
@@ -300,7 +300,7 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
         'Rise-ble-Data', 
         bleData, 
         { qos: 0, retain: false }, 
-        (error) => {
+        (error: any) => {
           if (error) {
             console.error(error)
           } else {
@@ -315,24 +315,24 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
       var long = gpsLocation.coords.longitude;
 
       let msg = 'vehicle coordonates: \n\r' + 'Latitude-> ' + lat + '\n\r' + 'Longitude-> ' + long
-      /*
-      client.subscribe('Rise-GPS-Data', { qos: 0 }, function (error, granted) {
+      
+      this.mqttClient.subscribe('Rise-GPS-Data', { qos: 0 }, function (error: any, granted: any) {
         if (error) {
           console.log(error)
         } else {
           console.log(`${granted[0].topic} was subscribed`)
         }
       })   
-      client.on('message', function (topic, payload, packet) {
+      this.mqttClient.on('message', function (topic: any, payload: any, packet: any) {
         console.log(`Topic: ${topic}, Message: ${payload.toString()}, QoS: ${packet.qos}`)
       })
-      */
+      
       
       this.mqttClient?.publish(
         'Rise-GPS-Data', 
         msg, 
         { qos: 0, retain: false }, 
-        (error) => {
+        (error: any) => {
           if (error) {
             console.log(error)
           } else {
