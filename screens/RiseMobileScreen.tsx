@@ -314,7 +314,12 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
       var lat = gpsLocation.coords.latitude;
       var long = gpsLocation.coords.longitude;
 
-      let msg = 'vehicle coordonates: \n\r' + 'Latitude-> ' + lat + '\n\r' + 'Longitude-> ' + long
+      var timestamp = gpsLocation.timestamp;
+      var date = new Date(timestamp).toLocaleString("fr-CA");
+
+      var jsonPosition = '{ "coordonee" : ' + 
+        '{ "latitude":' + lat.toString() + ', "longitude":' + long.toString() + ', "timestamp":' + date + '} ' +
+      '}';
       
       this.mqttClient.subscribe('Rise-GPS-Data', { qos: 0 }, function (error: any, granted: any) {
         if (error) {
@@ -330,7 +335,7 @@ export default class RiseMobileScreen extends React.Component<HomeScreenProps, R
       
       this.mqttClient?.publish(
         'Rise-GPS-Data', 
-        msg, 
+        jsonPosition, 
         { qos: 0, retain: false }, 
         (error: any) => {
           if (error) {
